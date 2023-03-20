@@ -418,13 +418,12 @@ int checkChessRules(Board* board, Piece* piece, int bx, int by, int ax, int ay, 
             }
             else if (dx == 0 && dy == 2) {
                 if (piece->hasMoved) return 0; //king has already moved too bad!
-                int opposingColor = piece->color == WHITE ? BLACK : WHITE;
                 int rookx = ax;
                 int rooky = ay > by ? 7 : 0;
                 int ydir = by < ay ? 1 : -1;
                 int y = by + ydir;
                 while (y != rooky) {
-                    if (board->squares[rookx][y] != NULL || isSquareAttacked(board, rookx, y, opposingColor))
+                    if (board->squares[rookx][y] != NULL || isSquareAttacked(board, piece->color % 2 == 1, rookx, y))
                         return 0; // piece is blocking the way, or middle square is being attacked
                     y += ydir;
                 }
