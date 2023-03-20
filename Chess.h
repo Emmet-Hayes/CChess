@@ -21,9 +21,9 @@ typedef struct {
 } Piece;
 
 typedef struct {
-	Piece* piece;
-	int bx, by;
-	int ax, ay; 
+    Piece* piece;
+    int bx, by;
+    int ax, ay; 
 } LastMove;
 
 typedef struct {

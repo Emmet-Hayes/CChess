@@ -64,60 +64,60 @@ void initializePieceAtSquare(Board* board, PieceType type, Color color, int i, i
 
 
 char pieceToChar(PieceType p) {
-	switch(p) {
-		case PAWN: return 'p';
-		case KNIGHT: return 'N';
-		case BISHOP: return 'B';
-		case ROOK: return 'R';
-		case QUEEN: return 'Q';
-		case KING: return 'K';
-		default: return '-';
-	}
+    switch(p) {
+        case PAWN: return 'p';
+        case KNIGHT: return 'N';
+        case BISHOP: return 'B';
+        case ROOK: return 'R';
+        case QUEEN: return 'Q';
+        case KING: return 'K';
+        default: return '-';
+    }
 }
 
 
 char colorToChar(Color c) {
-	switch(c) {
-		case WHITE: return 'W';
-		case BLACK: return 'B';
-		default: return '-';
-	}
+    switch(c) {
+        case WHITE: return 'W';
+        case BLACK: return 'B';
+        default: return '-';
+    }
 }
 
 
 char* pieceToName(PieceType p) {
-	switch(p) {
-		case PAWN: return "Pawn";
-		case KNIGHT: return "Knight";
-		case BISHOP: return "Bishop";
-		case ROOK: return "Rook";
-		case QUEEN: return "Queen";
-		case KING: return "King";
-		default: return "None";
-	}
+    switch(p) {
+        case PAWN: return "Pawn";
+        case KNIGHT: return "Knight";
+        case BISHOP: return "Bishop";
+        case ROOK: return "Rook";
+        case QUEEN: return "Queen";
+        case KING: return "King";
+        default: return "None";
+    }
 }
 
 
 char* colorToName(Color c) {
-	switch(c) {
-		case WHITE: return "White";
-		case BLACK: return "Black";
-		default: return "None";
-	}
+    switch(c) {
+        case WHITE: return "White";
+        case BLACK: return "Black";
+        default: return "None";
+    }
 }
 
 
 void printBoard(Board* board) {
-	printf("\n+----+----+----+----+----+----+----+----+----+\n");
-	printf("|    | a  | b  | c  | d  | e  | f  | g  | h  |\n");
-	printf("+----+----+----+----+----+----+----+----+----+\n");
+    printf("\n+----+----+----+----+----+----+----+----+----+\n");
+    printf("|    | a  | b  | c  | d  | e  | f  | g  | h  |\n");
+    printf("+----+----+----+----+----+----+----+----+----+\n");
     for (int i = CHESS_DIM - 1; i >= 0; --i) {
-    	printf("| %d  ", (i + 1));
+        printf("| %d  ", (i + 1));
         for (int j = 0; j < CHESS_DIM; ++j) {
-        	if (j == 0) printf("| ");
+            if (j == 0) printf("| ");
             if (board->squares[i][j] != NULL)
-        	   printf("%c%c | ", colorToChar(board->squares[i][j]->color),
-        					     pieceToChar(board->squares[i][j]->type));
+               printf("%c%c | ", colorToChar(board->squares[i][j]->color),
+                                 pieceToChar(board->squares[i][j]->type));
             else if ((i + j) % 2 == 0)
                 printf("-- | ");
             else
@@ -130,7 +130,7 @@ void printBoard(Board* board) {
     printf("| White: ");
 
     for (int i = 0; i < 5; ++i) {
-    	printf("%c: %d ", pieceToChar((PieceType)(i)), takenPiecesCounter[i]);
+        printf("%c: %d ", pieceToChar((PieceType)(i)), takenPiecesCounter[i]);
     }
 
     int wscore = takenPiecesCounter[0];
@@ -142,7 +142,7 @@ void printBoard(Board* board) {
     printf("\n+--------------------------------------------+\n");
     printf("| Black: ");
     for(int i = 5; i < 10; ++i) {
-    	printf("%c: %d ", pieceToChar((PieceType)(i - 5)), takenPiecesCounter[i]);
+        printf("%c: %d ", pieceToChar((PieceType)(i - 5)), takenPiecesCounter[i]);
     }
 
     int bscore = takenPiecesCounter[5];
@@ -153,42 +153,42 @@ void printBoard(Board* board) {
     printf("           |\n");
     printf("+--------------------------------------------+\n");
     if (wscore - bscore == 1)
-    	printf("| Black is winning by material 1 point      |");
-  	else if (wscore - bscore > 1 && wscore - bscore < 10)
-  		printf("| Black is winning by material %d points     |", 
-  			   wscore - bscore);
-  	else if (wscore - bscore >= 10)
-  		printf("| Black is winning by material %d points    |", 
-  			   wscore - bscore);
-  	else if (bscore - wscore == 1)
-  		printf("| White is winning by material 1 point        |");
-  	else if (bscore - wscore > 1 && bscore - wscore < 10)
-  		printf("| White is winning by material %d points      |", 
-  			   bscore - wscore);
-  	else if (bscore - wscore >= 10)
-  		printf("| White is winning by material %d points     |", 
-  			   bscore - wscore);
-  	else
-  		printf("| Material is even.                          |");
-  	printf("\n+--------------------------------------------+\n");
+        printf("| Black is winning by material 1 point      |");
+    else if (wscore - bscore > 1 && wscore - bscore < 10)
+        printf("| Black is winning by material %d points     |", 
+               wscore - bscore);
+    else if (wscore - bscore >= 10)
+        printf("| Black is winning by material %d points    |", 
+               wscore - bscore);
+    else if (bscore - wscore == 1)
+        printf("| White is winning by material 1 point        |");
+    else if (bscore - wscore > 1 && bscore - wscore < 10)
+        printf("| White is winning by material %d points      |", 
+               bscore - wscore);
+    else if (bscore - wscore >= 10)
+        printf("| White is winning by material %d points     |", 
+               bscore - wscore);
+    else
+        printf("| Material is even.                          |");
+    printf("\n+--------------------------------------------+\n");
     printf("\n");
 }
 
 
 void saveBoard(Board* board, const char* filename) {
-	FILE* file = fopen(filename, "wb");
-	if (file == NULL) {
-		printf("Error opening file for writing.\n");
-		return;
-	}
+    FILE* file = fopen(filename, "wb");
+    if (file == NULL) {
+        printf("Error opening file for writing.\n");
+        return;
+    }
 
-	fwrite(board, sizeof(Board), 1, file);
-	fclose(file);
+    fwrite(board, sizeof(Board), 1, file);
+    fclose(file);
 }
 
 
 void loadBoard(Board* board, const char* filename) {
-	FILE* file = fopen(filename, "rb");
+    FILE* file = fopen(filename, "rb");
     if (file == NULL) {
         printf("Error opening file for reading.\n");
         return;
@@ -242,23 +242,23 @@ int collectInput(char* input) {
 
 
 void incrementCaptureCounter(PieceType p, Color c) {
-	int counterIndex = -1;
+    int counterIndex = -1;
 
-	switch(c) {
-		case BLACK: counterIndex += 5; break;
-		case WHITE: default: break;
-	}
+    switch(c) {
+        case BLACK: counterIndex += 5; break;
+        case WHITE: default: break;
+    }
 
-	switch(p) {
-		case PAWN: counterIndex += 1; break;
-		case KNIGHT: counterIndex += 2; break;
-		case BISHOP: counterIndex += 3; break;
-		case ROOK: counterIndex += 4; break;
-		case QUEEN: counterIndex += 5; break;
-		case KING: default: break;
-	}
+    switch(p) {
+        case PAWN: counterIndex += 1; break;
+        case KNIGHT: counterIndex += 2; break;
+        case BISHOP: counterIndex += 3; break;
+        case ROOK: counterIndex += 4; break;
+        case QUEEN: counterIndex += 5; break;
+        case KING: default: break;
+    }
 
-	++takenPiecesCounter[counterIndex];
+    ++takenPiecesCounter[counterIndex];
 }
 
 
@@ -282,19 +282,19 @@ int checkChessRules(Board* board, Piece* piece, int bx, int by, int ax, int ay, 
                     return 1; // Capture
                 }
                 else if (bx == ax - 1 && (by == ay - 1 || by == ay + 1) &&
-                	board->squares[ax][ay] == NULL &&
-                	board->lastMove->piece != NULL &&
-                	board->lastMove->piece->type == PAWN &&
-                	board->lastMove->piece->color == BLACK &&
-                	board->lastMove->bx == ax + 1 &&
-                	board->lastMove->ax == ax - 1 &&
-                	board->lastMove->by == ay &&
-                	board->lastMove->ay == ay) {
-                	int i = board->lastMove->ax;
-                	int j = board->lastMove->ay;
-              		if (inc_mode == 1) incrementCaptureCounter(board->squares[i][j]->type, board->squares[i][j]->color);
-                	board->squares[i][j] = NULL;
-                	return 1; // En passant for white pawn
+                    board->squares[ax][ay] == NULL &&
+                    board->lastMove->piece != NULL &&
+                    board->lastMove->piece->type == PAWN &&
+                    board->lastMove->piece->color == BLACK &&
+                    board->lastMove->bx == ax + 1 &&
+                    board->lastMove->ax == ax - 1 &&
+                    board->lastMove->by == ay &&
+                    board->lastMove->ay == ay) {
+                    int i = board->lastMove->ax;
+                    int j = board->lastMove->ay;
+                    if (inc_mode == 1) incrementCaptureCounter(board->squares[i][j]->type, board->squares[i][j]->color);
+                    board->squares[i][j] = NULL;
+                    return 1; // En passant for white pawn
                 }
             }
             else if (piece->color == BLACK) {
@@ -314,19 +314,19 @@ int checkChessRules(Board* board, Piece* piece, int bx, int by, int ax, int ay, 
                     return 1; // Capture
                 } 
                 else if (bx == ax + 1 && (by == ay - 1 || by == ay + 1) &&
-                	board->squares[ax][ay] == NULL &&
-                	board->lastMove->piece != NULL &&
-                	board->lastMove->piece->type == PAWN &&
-                	board->lastMove->piece->color == WHITE &&
-                	board->lastMove->bx == ax - 1 &&
-                	board->lastMove->ax == ax + 1 &&
-                	board->lastMove->by == ay &&
-                	board->lastMove->ay == ay) {
-                	int i = board->lastMove->ax;
-                	int j = board->lastMove->ay;
-              		if (inc_mode == 1) incrementCaptureCounter(board->squares[i][j]->type, board->squares[i][j]->color);
-                	board->squares[i][j] = NULL;
-                	return 1; // En passant for white pawn
+                    board->squares[ax][ay] == NULL &&
+                    board->lastMove->piece != NULL &&
+                    board->lastMove->piece->type == PAWN &&
+                    board->lastMove->piece->color == WHITE &&
+                    board->lastMove->bx == ax - 1 &&
+                    board->lastMove->ax == ax + 1 &&
+                    board->lastMove->by == ay &&
+                    board->lastMove->ay == ay) {
+                    int i = board->lastMove->ax;
+                    int j = board->lastMove->ay;
+                    if (inc_mode == 1) incrementCaptureCounter(board->squares[i][j]->type, board->squares[i][j]->color);
+                    board->squares[i][j] = NULL;
+                    return 1; // En passant for white pawn
                 }
             }
             break;
@@ -344,7 +344,7 @@ int checkChessRules(Board* board, Piece* piece, int bx, int by, int ax, int ay, 
                     y += ydir;
                 }
                 if (board->squares[ax][ay] != NULL)
-                	if (inc_mode == 1) incrementCaptureCounter(board->squares[ax][ay]->type, board->squares[ax][ay]->color);
+                    if (inc_mode == 1) incrementCaptureCounter(board->squares[ax][ay]->type, board->squares[ax][ay]->color);
                 return 1; // nothing is blocking the rook
             }
             break;
@@ -357,8 +357,8 @@ int checkChessRules(Board* board, Piece* piece, int bx, int by, int ax, int ay, 
                     return 1;
                 if (board->squares[ax][ay] != NULL &&
                     board->squares[ax][ay]->color != piece->color) {
-                	if (inc_mode == 1) incrementCaptureCounter(board->squares[ax][ay]->type, board->squares[ax][ay]->color);
-                	return 1;
+                    if (inc_mode == 1) incrementCaptureCounter(board->squares[ax][ay]->type, board->squares[ax][ay]->color);
+                    return 1;
                 }
             }
             break; 
@@ -380,7 +380,7 @@ int checkChessRules(Board* board, Piece* piece, int bx, int by, int ax, int ay, 
                     y += ydir;
                 }
                 if (board->squares[ax][ay] != NULL)
-                	if (inc_mode == 1) incrementCaptureCounter(board->squares[ax][ay]->type, board->squares[ax][ay]->color);
+                    if (inc_mode == 1) incrementCaptureCounter(board->squares[ax][ay]->type, board->squares[ax][ay]->color);
 
                 return 1; // No pieces are blocking
             }
@@ -403,13 +403,13 @@ int checkChessRules(Board* board, Piece* piece, int bx, int by, int ax, int ay, 
                     y += ydir;
                 }
                 if (board->squares[ax][ay] != NULL)
-                	if (inc_mode == 1) incrementCaptureCounter(board->squares[ax][ay]->type, board->squares[ax][ay]->color);
+                    if (inc_mode == 1) incrementCaptureCounter(board->squares[ax][ay]->type, board->squares[ax][ay]->color);
                 return 1; // no pieces are blocking
             }
             break; 
         }
         case KING: { 
-        	int dx = abs(ax - bx);
+            int dx = abs(ax - bx);
             int dy = abs(ay - by);
             if ((dx == 0 && dy == 1) || (dx == 1 && dy == 0) || (dx == 1 && dy == 1)) {
                 if (board->squares[ax][ay] == NULL || 
@@ -432,14 +432,14 @@ int checkChessRules(Board* board, Piece* piece, int bx, int by, int ax, int ay, 
                 if (board->squares[rookx][rooky]->type != ROOK ||
                     board->squares[rookx][rooky]->hasMoved)
                     return 0;
-				
+                
                 if (rooky == 0) { // queen side rook replacing:
                     free(board->squares[rookx][rooky]);
-                	board->squares[rookx][rooky] = NULL;
+                    board->squares[rookx][rooky] = NULL;
                     initializePieceAtSquare(board, ROOK, piece->color, rookx, rooky + 3);
                 } else { // king side
                     free(board->squares[rookx][rooky]);
-                	board->squares[rookx][rooky] = NULL;
+                    board->squares[rookx][rooky] = NULL;
                     initializePieceAtSquare(board, ROOK, piece->color, rookx, rooky - 2);
                 }
                 return 1; 
@@ -540,20 +540,20 @@ int validateAndRunMove(Board* board, char* before, char* after, int* movesPlayed
         return 0;
     }
     if (*movesPlayed % 2 == 0) {
-    	if (board->squares[bx][by]->color != WHITE) {
-    		printf("Error, it should be white's turn.\n");
-    		return 0;
-    	}
+        if (board->squares[bx][by]->color != WHITE) {
+            printf("Error, it should be white's turn.\n");
+            return 0;
+        }
     }
     else {
-    	if (board->squares[bx][by]->color != BLACK) {
-    		printf("Error, it should be black's turn.\n");
-    		return 0;
-    	}
+        if (board->squares[bx][by]->color != BLACK) {
+            printf("Error, it should be black's turn.\n");
+            return 0;
+        }
     }
 
     int status = checkChessRules(board, board->squares[bx][by], bx, by, ax, ay, 1);
-	if (status == 0)
+    if (status == 0)
         printf("Error, move violates chess rules.\n");
     else {
         movePiece(board, bx, by, ax, ay);
@@ -607,15 +607,15 @@ void readMovesFromFile(Board* board, const char* filename, int* movesPlayed, cha
         char* afterMove = strtok(NULL, "=");
         
         if (beforeMove != NULL && afterMove != NULL) {
-        	int bx = -1, by = -1, ax = -1, ay = -1;
-	    	notationToArray(beforeMove, &bx, &by);
-	    	notationToArray(afterMove, &ax, &ay);
+            int bx = -1, by = -1, ax = -1, ay = -1;
+            notationToArray(beforeMove, &bx, &by);
+            notationToArray(afterMove, &ax, &ay);
             if (validateAndRunMove(board, beforeMove, afterMove, movesPlayed)) {
-            	printf("\n+--------------------------------------------+\n"
-            		     "| Move # %d (%s's turn): %s at %s to %s"
-            		   "\n+--------------------------------------------+\n", 
-            		   (*movesPlayed / 2) + 1, (*movesPlayed % 2 == 0) ? "White" : "Black", 
-            		   pieceToName(board->squares[ax][ay]->type), beforeMove, afterMove);
+                printf("\n+--------------------------------------------+\n"
+                         "| Move # %d (%s's turn): %s at %s to %s"
+                       "\n+--------------------------------------------+\n", 
+                       (*movesPlayed / 2) + 1, (*movesPlayed % 2 == 0) ? "White" : "Black", 
+                       pieceToName(board->squares[ax][ay]->type), beforeMove, afterMove);
                 appendMoveToHistory(gameHistory, moveCopy);
                 printBoard(board);
                 ++*movesPlayed;
@@ -641,37 +641,37 @@ void chessMain() {
     printBoard(board);
 
     while (loop == 1) {
-    	int collectCode = collectInput(input);
+        int collectCode = collectInput(input);
         if (collectCode == -1 || collectCode == 1) loop = 0;
         if (collectCode == 2) {
-	       saveBoard(board, "savefile.bin");
-	       printf("Board saved.\n");
+           saveBoard(board, "savefile.bin");
+           printf("Board saved.\n");
         }
         if (collectCode == 3) {
-        	loadBoard(board, "savefile.bin");
-        	if (board != NULL) {
-        		printf("Board loaded.\n");
-        		printBoard(board);
-        	}
-        	else
-        		printf("Failed to load board.\n");
+            loadBoard(board, "savefile.bin");
+            if (board != NULL) {
+                printf("Board loaded.\n");
+                printBoard(board);
+            }
+            else
+                printf("Failed to load board.\n");
         }
 
         if (collectCode == 4) {
-        	printf("Game History (length: %ld):\n%s", strlen(gameHistory), gameHistory);
-        	FILE* file = fopen("gamehist.txt", "w");
-        	fputs(gameHistory, file);
-        	fclose(file);
+            printf("Game History (length: %ld):\n%s", strlen(gameHistory), gameHistory);
+            FILE* file = fopen("gamehist.txt", "w");
+            fputs(gameHistory, file);
+            fclose(file);
         }
 
         if (collectCode == 5)
-        	 readMovesFromFile(board, "gamehist.txt", &board->turnCounter, gameHistory);
+             readMovesFromFile(board, "gamehist.txt", &board->turnCounter, gameHistory);
 
         if (collectCode == 6) {
-        	destroyBoard(board);
-        	board = createBoard();
-        	setupBoardStandard(board);
-        	printf("Board was reset.\n");
+            destroyBoard(board);
+            board = createBoard();
+            setupBoardStandard(board);
+            printf("Board was reset.\n");
             board->turnCounter = 0;
             for (int i = 0; i < 10; ++i)
                 takenPiecesCounter[i] = 0;
@@ -681,12 +681,12 @@ void chessMain() {
         strcpy(input_cpy, input);
         validationResult = validateInput(input, board); // destructive of input
         if (validationResult == -1)
-        	continue;
+            continue;
         else if (validationResult == 1) {
-        	if (board->turnCounter < 300)
-        		appendMoveToHistory(gameHistory, input_cpy);
-        	printBoard(board);
-        	++board->turnCounter;
+            if (board->turnCounter < 300)
+                appendMoveToHistory(gameHistory, input_cpy);
+            printBoard(board);
+            ++board->turnCounter;
 
             if (gameOver == 1) {
                 printf("Game over: %s wins!\n", colorToName(board->turnCounter % 2 == 0));
