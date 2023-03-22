@@ -1,6 +1,5 @@
 #include "Chess.h"
 #include <locale.h>
-
 #ifdef _WIN32
 	#define OS_NAME "Windows"
 	#include <windows.h>
@@ -10,6 +9,7 @@
 #else
 	#define OS_NAME "Unknown"
 #endif
+
 
 Board* createBoard() {
     Board* board = (Board*)malloc(sizeof(Board));
@@ -27,7 +27,6 @@ Board* createBoard() {
     return board;
 }
 
-
 void destroyBoard(Board* board) {
     for (int i = 0; i < CHESS_DIM; ++i) {
         for (int j = 0; j < CHESS_DIM; ++j)
@@ -36,7 +35,6 @@ void destroyBoard(Board* board) {
     free(board->lastMove);
     free(board);
 }
-
 
 void setupBoardStandard(Board* board) {
     if (board != NULL) {
@@ -63,7 +61,6 @@ void setupBoardStandard(Board* board) {
     }
 }
 
-
 void initializePieceAtSquare(Board* board, PieceType type, Color color, int i, int j) {
     board->squares[i][j] = (Piece*)malloc(sizeof(Piece));
     board->squares[i][j]->type = type;
@@ -72,7 +69,6 @@ void initializePieceAtSquare(Board* board, PieceType type, Color color, int i, i
     board->squares[i][j]->y = j;
     board->squares[i][j]->hasMoved = 0;
 }
-
 
 const char pieceToChar(PieceType p) {
     switch(p) {
@@ -85,7 +81,6 @@ const char pieceToChar(PieceType p) {
         default: return '-';
     }
 }
-
 
 const char colorToChar(Color c) {
     switch(c) {
@@ -126,7 +121,6 @@ const char* getPieceUnicode(PieceType t, Color c) {
     }
 }
 
-
 int doesTerminalSupportUnicode() {
     char* term = getenv("TERM");
     int unicodeSupported = 0;
@@ -136,12 +130,47 @@ int doesTerminalSupportUnicode() {
             unicodeSupported = 1;
         }
     }
-    if (strcmp(OS_NAME, "Windows") == 0) {
-    	unicodeSupported = checkForUnicodeShellsWindows();
-    	if (unicodeSupported)
-    		SetConsoleOutputCP(CP_UTF8);
-    }
+   #ifdef _WIN32
+    unicodeSupported = checkForUnicodeShellsWindows();
+    if (unicodeSupported)
+    	SetConsoleOutputCP(CP_UTF8);
+   #endif
     return unicodeSupported;
+}
+
+int checkForUnicodeShellsWindows() {
+   #ifdef _WIN32
+    HWND consoleWindow = GetConsoleWindow();
+    DWORD processId;
+    GetWindowThreadProcessId(consoleWindow, &processId);
+
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snapshot != INVALID_HANDLE_VALUE) {
+        PROCESSENTRY32 entry;
+        entry.dwSize = sizeof(entry);
+
+        if (Process32First(snapshot, &entry)) {
+            do {
+                if (entry.th32ProcessID == processId) {
+                    if (_stricmp(entry.szExeFile, "powershell.exe") == 0 ||
+                        _stricmp(entry.szExeFile, "pwsh.exe") == 0 ||
+                        _stricmp(entry.szExeFile, "wt.exe") == 0 ||
+                        _stricmp(entry.szExeFile, "cmd.exe") == 0 ||
+                        _stricmp(entry.szExeFile, "putty.exe") == 0 ||
+                        _stricmp(entry.szExeFile, "git-bash.exe") == 0 ||
+                        _stricmp(entry.szExeFile, "ConEmu.exe") == 0 ||
+                        _stricmp(entry.szExeFile, "Cmder.exe") == 0) {
+                        CloseHandle(snapshot);
+                        return 1;
+                    }
+                    break;
+                }
+            } while (Process32Next(snapshot, &entry));
+        }
+        CloseHandle(snapshot);
+    }
+   #endif
+    return 0;
 }
 
 void printBoard(Board* board, int unicodeSupported) {
@@ -222,15 +251,15 @@ void printBoard(Board* board, int unicodeSupported) {
     printf("           |\n");
     printf("+--------------------------------------------+\n");
     if (wscore - bscore == 1)
-        printf("| Black is winning by material 1 point      |");
+        printf("| Black is winning by material 1 point       |");
     else if (wscore - bscore > 1 && wscore - bscore < 10)
-        printf("| Black is winning by material %d points     |", 
+        printf("| Black is winning by material %d points      |", 
                wscore - bscore);
     else if (wscore - bscore >= 10)
-        printf("| Black is winning by material %d points    |", 
+        printf("| Black is winning by material %d points     |", 
                wscore - bscore);
     else if (bscore - wscore == 1)
-        printf("| White is winning by material 1 point        |");
+        printf("| White is winning by material 1 point       |");
     else if (bscore - wscore > 1 && bscore - wscore < 10)
         printf("| White is winning by material %d points      |", 
                bscore - wscore);
@@ -243,7 +272,6 @@ void printBoard(Board* board, int unicodeSupported) {
     printf("\n");
 }
 
-
 void saveBoard(Board* board, const char* filename) {
     FILE* file = fopen(filename, "wb");
     if (file == NULL) {
@@ -254,7 +282,6 @@ void saveBoard(Board* board, const char* filename) {
     fwrite(board, sizeof(Board), 1, file);
     fclose(file);
 }
-
 
 void loadBoard(Board* board, const char* filename) {
     FILE* file = fopen(filename, "rb");
@@ -274,12 +301,10 @@ void loadBoard(Board* board, const char* filename) {
     return;
 }
 
-
 void notationToArray(char* notation, int* r, int* c) {
     *c = notation[0] - 'a';
     *r = notation[1] - '1';
 }
-
 
 void arrayToNotation(int r, int c, char* notation) {
     notation[0] = c + 'a';
@@ -287,45 +312,10 @@ void arrayToNotation(int r, int c, char* notation) {
     notation[2] = '\0';
 }
 
-int checkForUnicodeShellsWindows() {
-    HWND consoleWindow = GetConsoleWindow();
-    DWORD processId;
-    GetWindowThreadProcessId(consoleWindow, &processId);
-
-    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    if (snapshot != INVALID_HANDLE_VALUE) {
-        PROCESSENTRY32 entry;
-        entry.dwSize = sizeof(entry);
-
-        if (Process32First(snapshot, &entry)) {
-            do {
-                if (entry.th32ProcessID == processId) {
-                    if (_stricmp(entry.szExeFile, "powershell.exe") == 0 ||
-                        _stricmp(entry.szExeFile, "pwsh.exe") == 0 ||
-                        _stricmp(entry.szExeFile, "wt.exe") == 0 ||
-                        _stricmp(entry.szExeFile, "cmd.exe") == 0 ||
-                        _stricmp(entry.szExeFile, "putty.exe") == 0 ||
-                        _stricmp(entry.szExeFile, "git-bash.exe") == 0 ||
-                        _stricmp(entry.szExeFile, "ConEmu.exe") == 0 ||
-                        _stricmp(entry.szExeFile, "Cmder.exe") == 0) {
-                        CloseHandle(snapshot);
-                        return 1;
-                    }
-                    break;
-                }
-            } while (Process32Next(snapshot, &entry));
-        }
-        CloseHandle(snapshot);
-    }
-
-    return 0;
-}
-
 void appendMoveToHistory(char* history, const char* move) {
     strncat(history, move, 6);
     strcat(history, "\n");
 }
-
 
 int collectInput(char* input) {
    if (fgets(input, MAX_INPUT_LENGTH, stdin) == NULL) {
@@ -341,7 +331,6 @@ int collectInput(char* input) {
    if (strcmp(input, "\n") != 0) input[strcspn(input, "\n")] = '\0';
    return 0;
 }
-
 
 void incrementCaptureCounter(PieceType p, Color c) {
     int counterIndex = -1;
@@ -359,7 +348,6 @@ void incrementCaptureCounter(PieceType p, Color c) {
     }
     ++takenPiecesCounter[counterIndex];
 }
-
 
 int checkChessRules(Board* board, Piece* piece, int bx, int by, int ax, int ay, int inc_mode) {
     switch (piece->type) {
@@ -513,10 +501,11 @@ int checkChessRules(Board* board, Piece* piece, int bx, int by, int ax, int ay, 
         case KING: { 
             int dx = abs(ax - bx);
             int dy = abs(ay - by);
-            if ((dx == 0 && dy == 1) || (dx == 1 && dy == 0) || (dx == 1 && dy == 1))
+            if ((dx == 0 && dy == 1) || (dx == 1 && dy == 0) || (dx == 1 && dy == 1)) {
                 if (board->squares[ax][ay] == NULL || 
                     board->squares[ax][ay]->color != piece->color)
                     return 1; // normal king move
+            }
             else if (dx == 0 && dy == 2) {
                 if (piece->hasMoved) return 0; //king has already moved too bad!
                 int rookx = ax;
@@ -551,7 +540,6 @@ int checkChessRules(Board* board, Piece* piece, int bx, int by, int ax, int ay, 
     return 0;
 }
 
-
 int isSquareAttacked(Board* board, Color color, int x, int y) {
     for (int i = 0; i < CHESS_DIM; ++i) {
         for (int j = 0; j < CHESS_DIM; ++j) {
@@ -565,7 +553,6 @@ int isSquareAttacked(Board* board, Color color, int x, int y) {
     }
     return 0;
 }
-
 
 int isKingInCheck(Board* board, Color color) {
     int kingX, kingY;
@@ -581,7 +568,6 @@ int isKingInCheck(Board* board, Color color) {
     }
     return isSquareAttacked(board, color, kingX, kingY);
 }
-
 
 int isCheckmateOrStalemate(Board* board, Color color) {
     int kingInCheck = isKingInCheck(board, color);
@@ -610,7 +596,7 @@ int isCheckmateOrStalemate(Board* board, Color color) {
                                 arrayToNotation(x1, y1, bef);
                                 arrayToNotation(x2, y2, aft);
                                 if (kingInCheck)
-                                    printf("One valid move that gets you out of check: %c%c at %s to %s\n",
+                                    printf("One valid move hint that gets you out of check: %c%c at %s to %s\n",
                                            colorToChar(piece->color), pieceToChar(piece->type), bef, aft);
                                 return 0;
                             }
@@ -623,7 +609,6 @@ int isCheckmateOrStalemate(Board* board, Color color) {
     return kingInCheck ? 2 : 1;
 }   
 
-
 void movePiece(Board* board, int bx, int by, int ax, int ay) {
     if (board->squares[ax][ay] == NULL)
         initializePieceAtSquare(board, board->squares[bx][by]->type, board->squares[bx][by]->color, ax, ay);
@@ -635,7 +620,6 @@ void movePiece(Board* board, int bx, int by, int ax, int ay) {
     free(board->squares[bx][by]);
     board->squares[bx][by] = NULL; // always clear the prev square
 }
-
 
 int validateAndRunMove(Board* board, char* before, char* after, int* movesPlayed) {
     int bx = 0, by = 0, ax = 0, ay = 0;
@@ -685,7 +669,6 @@ int validateAndRunMove(Board* board, char* before, char* after, int* movesPlayed
     return status;
 }
 
-
 int validateInput(char* input, Board* board) {
     char* beforeMove; 
     char* afterMove;
@@ -699,9 +682,7 @@ int validateInput(char* input, Board* board) {
     return -1;
 }
 
-
-void readMovesFromFile(Board* board, const char* filename, 
-					   int* movesPlayed, char* gameHistory, int unicodeSupported) {
+void readMovesFromFile(Board* board, const char* filename, int* movesPlayed, char* gameHistory, int unicodeSupported) {
     FILE* file = fopen(filename, "r");
     if (file == NULL) {
         printf("Error opening file for reading.\n");
@@ -741,9 +722,8 @@ void readMovesFromFile(Board* board, const char* filename,
     fclose(file);
 }
 
-
 void chessMain() {
-    printf("Welcome to a very tiny chess app\n");
+    printf("Smol Chess\n");
     char input[MAX_INPUT_LENGTH]; // 6 bytes
     Board* board = createBoard(); // 524 bytes total
     setupBoardStandard(board); //
@@ -811,7 +791,6 @@ void chessMain() {
     printf("Exiting...\n");
     destroyBoard(board);
 }
-
 
 int main() {
     chessMain();
