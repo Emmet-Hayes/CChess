@@ -1,6 +1,16 @@
 #include "Chess.h"
 #include <locale.h>
 
+#ifdef _WIN32
+	#define OS_NAME "Windows"
+	#include <windows.h>
+	#include <tlhelp32.h>
+#elif __unix__
+	#define OS_NAME "Unix-based"
+#else
+	#define OS_NAME "Unknown"
+#endif
+
 Board* createBoard() {
     Board* board = (Board*)malloc(sizeof(Board));
     board->turnCounter = 0;
@@ -64,7 +74,7 @@ void initializePieceAtSquare(Board* board, PieceType type, Color color, int i, i
 }
 
 
-char pieceToChar(PieceType p) {
+const char pieceToChar(PieceType p) {
     switch(p) {
         case PAWN: return 'p';
         case KNIGHT: return 'N';
@@ -77,7 +87,7 @@ char pieceToChar(PieceType p) {
 }
 
 
-char colorToChar(Color c) {
+const char colorToChar(Color c) {
     switch(c) {
         case WHITE: return 'W';
         case BLACK: return 'B';
@@ -85,7 +95,7 @@ char colorToChar(Color c) {
     }
 }
 
-char* pieceToName(PieceType p) {
+const char* pieceToName(PieceType p) {
     switch(p) {
         case PAWN: return "Pawn";
         case KNIGHT: return "Knight";
@@ -97,7 +107,7 @@ char* pieceToName(PieceType p) {
     }
 }
 
-char* colorToName(Color c) {
+const char* colorToName(Color c) {
     switch(c) {
         case WHITE: return "White";
         case BLACK: return "Black";
@@ -105,7 +115,7 @@ char* colorToName(Color c) {
     }
 }
 
-char* getPieceUnicode(PieceType t, Color c) {
+const char* getPieceUnicode(PieceType t, Color c) {
     switch(t) {
         case KING: default: return c == WHITE ? "\u265A" : "\u2654";
         case QUEEN: return c == WHITE ? "\u265B" : "\u2655";
@@ -117,28 +127,44 @@ char* getPieceUnicode(PieceType t, Color c) {
 }
 
 
-void printBoard(Board* board) {
+int doesTerminalSupportUnicode() {
     char* term = getenv("TERM");
-    int unicode_supported = 0;
+    int unicodeSupported = 0;
     if (term != NULL) {
         setlocale(LC_CTYPE, "");
         if (strstr(term, "xterm") != NULL || strstr(term, "rxvt") != NULL || strstr(term, "linux") != NULL) {
-            unicode_supported = 1;
+            unicodeSupported = 1;
         }
     }
+   #ifdef _WIN32
+    unicodeSupported = checkForUnicodeShellsWindows();
+    if (unicodeSupported)
+    	SetConsoleOutputCP(CP_UTF8);
+   #endif
+    return unicodeSupported;
+}
 
-    printf("\n+----+----+----+----+----+----+----+----+----+");
-    printf("\n|    | a  | b  | c  | d  | e  | f  | g  | h  |");
-    printf("\n+----+----+----+----+----+----+----+----+----+\n");
+void printBoard(Board* board, int unicodeSupported) {
+	if (unicodeSupported) {
+    	printf("\n    +---+---+---+---+---+---+---+---+");
+    	printf("\n    | a | b | c | d | e | f | g | h |");
+    	printf("\n+---+---+---+---+---+---+---+---+---+\n");
+	}
+	else {
+    	printf("\n     +----+----+----+----+----+----+----+----+");
+    	printf("\n     | a  | b  | c  | d  | e  | f  | g  | h  |");
+    	printf("\n+----+----+----+----+----+----+----+----+----+\n");
+    }
     for (int i = CHESS_DIM - 1; i >= 0; --i) {
-        printf("| %d  ", (i + 1));
+        if (unicodeSupported) printf("| %d ", (i + 1));
+        else printf("| %d  ", (i + 1));
         for (int j = 0; j < CHESS_DIM; ++j) {
             if (j == 0) printf("| ");
             if (board->squares[i][j] != NULL) {
                // new unicode special chars
-                if (unicode_supported) {
+                if (unicodeSupported) {
                     // causes tofu boxes if the terminal does support unicode, but doesnt have the char in the font
-                    printf(" %s | ", getPieceUnicode(board->squares[i][j]->type, 
+                    printf("%s | ", getPieceUnicode(board->squares[i][j]->type, 
                                                          board->squares[i][j]->color));
                 } else {
                     // Terminal does not support Unicode
@@ -146,20 +172,32 @@ void printBoard(Board* board) {
                                       pieceToChar(board->squares[i][j]->type));
                 }
             }
-            else if ((i + j) % 2 == 0)
-                printf("-- | ");
-            else
-                printf("   | ");
+            else if ((i + j) % 2 == 0) {
+            	if (unicodeSupported)
+            		printf("- | ");
+            	else
+                	printf("-- | ");
+            }
+            else {
+            	if (unicodeSupported)
+                	printf("  | ");
+                else
+                	printf("   | ");
+            }
         }
-        printf("\n+----+----+----+----+----+----+----+----+----+\n");
+        if (unicodeSupported && i == 0) 
+        	printf("\n+---+---+---+---+---+---+---+---+---+--------+\n");
+        else if (unicodeSupported)
+        	printf("\n+---+---+---+---+---+---+---+---+---+\n");
+        else 
+        	printf("\n+----+----+----+----+----+----+----+----+----+\n");
     }
     printf("| Captured Pieces:                           |");
     printf("\n+--------------------------------------------+\n");
     printf("| White: ");
 
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 5; ++i)
         printf("%c: %d ", pieceToChar((PieceType)(i)), takenPiecesCounter[i]);
-    }
 
     int wscore = takenPiecesCounter[0];
     wscore += takenPiecesCounter[1] * 3;
@@ -246,6 +284,40 @@ void arrayToNotation(int r, int c, char* notation) {
     notation[2] = '\0';
 }
 
+int checkForUnicodeShellsWindows() {
+   #ifdef _WIN32
+    HWND consoleWindow = GetConsoleWindow();
+    DWORD processId;
+    GetWindowThreadProcessId(consoleWindow, &processId);
+
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snapshot != INVALID_HANDLE_VALUE) {
+        PROCESSENTRY32 entry;
+        entry.dwSize = sizeof(entry);
+
+        if (Process32First(snapshot, &entry)) {
+            do {
+                if (entry.th32ProcessID == processId) {
+                    if (_stricmp(entry.szExeFile, "powershell.exe") == 0 ||
+                        _stricmp(entry.szExeFile, "pwsh.exe") == 0 ||
+                        _stricmp(entry.szExeFile, "wt.exe") == 0 ||
+                        _stricmp(entry.szExeFile, "putty.exe") == 0 ||
+                        _stricmp(entry.szExeFile, "git-bash.exe") == 0 ||
+                        _stricmp(entry.szExeFile, "ConEmu.exe") == 0 ||
+                        _stricmp(entry.szExeFile, "Cmder.exe") == 0) {
+                        CloseHandle(snapshot);
+                        return 1;
+                    }
+                    break;
+                }
+            } while (Process32Next(snapshot, &entry));
+        }
+        CloseHandle(snapshot);
+    }
+   #endif
+    return 0;
+}
+
 void appendMoveToHistory(char* history, const char* move) {
     strncat(history, move, 6);
     strcat(history, "\n");
@@ -257,7 +329,6 @@ int collectInput(char* input) {
       printf("chess app status: fgets failed\n");
       return -1;
    }
-
    if (strncmp(input, "save", 4) == 0) return 2;
    if (strncmp(input, "load", 4) == 0) return 3;
    if (strncmp(input, "print", 5) == 0)  return 4;
@@ -271,12 +342,10 @@ int collectInput(char* input) {
 
 void incrementCaptureCounter(PieceType p, Color c) {
     int counterIndex = -1;
-
     switch(c) {
         case BLACK: counterIndex += 5; break;
         case WHITE: default: break;
     }
-
     switch(p) {
         case PAWN: counterIndex += 1; break;
         case KNIGHT: counterIndex += 2; break;
@@ -285,7 +354,6 @@ void incrementCaptureCounter(PieceType p, Color c) {
         case QUEEN: counterIndex += 5; break;
         case KING: default: break;
     }
-
     ++takenPiecesCounter[counterIndex];
 }
 
@@ -634,7 +702,8 @@ int validateInput(char* input, Board* board) {
 }
 
 
-void readMovesFromFile(Board* board, const char* filename, int* movesPlayed, char* gameHistory) {
+void readMovesFromFile(Board* board, const char* filename, 
+					   int* movesPlayed, char* gameHistory, int unicodeSupported) {
     FILE* file = fopen(filename, "r");
     if (file == NULL) {
         printf("Error opening file for reading.\n");
@@ -662,7 +731,7 @@ void readMovesFromFile(Board* board, const char* filename, int* movesPlayed, cha
                        (*movesPlayed / 2) + 1, (*movesPlayed % 2 == 0) ? "White" : "Black", 
                        pieceToName(board->squares[ax][ay]->type), beforeMove, afterMove);
                 appendMoveToHistory(gameHistory, moveCopy);
-                printBoard(board);
+                printBoard(board, unicodeSupported);
                 ++*movesPlayed;
             } else {
                 printf("Invalid move found in the file: %s=%s\n", beforeMove, afterMove);
@@ -683,7 +752,8 @@ void chessMain() {
     int loop = 1; // 4 bytes
     int validationResult; // 4 bytes
     char gameHistory[MAX_MOVE_CHARS] = ""; // 2048 bytes total
-    printBoard(board);
+    int unicodeSupported = doesTerminalSupportUnicode();
+    printBoard(board, unicodeSupported);
 
     while (loop == 1) {
         int collectCode = collectInput(input);
@@ -696,7 +766,7 @@ void chessMain() {
             loadBoard(board, "savefile.bin");
             if (board != NULL) {
                 printf("Board loaded.\n");
-                printBoard(board);
+                printBoard(board, unicodeSupported);
             }
             else
                 printf("Failed to load board.\n");
@@ -710,7 +780,8 @@ void chessMain() {
         }
 
         if (collectCode == 5)
-             readMovesFromFile(board, "gamehist.txt", &board->turnCounter, gameHistory);
+             readMovesFromFile(board, "gamehist.txt", 
+             				   &board->turnCounter, gameHistory, unicodeSupported);
 
         if (collectCode == 6) {
             destroyBoard(board);
@@ -720,7 +791,7 @@ void chessMain() {
             board->turnCounter = 0;
             for (int i = 0; i < 10; ++i)
                 takenPiecesCounter[i] = 0;
-            printBoard(board);
+            printBoard(board, unicodeSupported);
         }
         char input_cpy[6] = "";
         strcpy(input_cpy, input);
@@ -730,7 +801,7 @@ void chessMain() {
         else if (validationResult == 1) {
             if (board->turnCounter < 300)
                 appendMoveToHistory(gameHistory, input_cpy);
-            printBoard(board);
+            printBoard(board, unicodeSupported);
             ++board->turnCounter;
 
             if (gameOver == 1) {
