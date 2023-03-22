@@ -196,8 +196,10 @@ void printBoard(Board* board, int unicodeSupported) {
     printf("\n+--------------------------------------------+\n");
     printf("| White: ");
 
-    for (int i = 0; i < 5; ++i)
-        printf("%c: %d ", pieceToChar((PieceType)(i)), takenPiecesCounter[i]);
+    for (int i = 0; i < 5; ++i) {
+    	if (unicodeSupported) printf("%s: %d ", getPieceUnicode((PieceType)i, WHITE), takenPiecesCounter[i]);
+        else printf("%c: %d ", pieceToChar((PieceType)i), takenPiecesCounter[i]);
+    }
 
     int wscore = takenPiecesCounter[0];
     wscore += takenPiecesCounter[1] * 3;
@@ -208,7 +210,8 @@ void printBoard(Board* board, int unicodeSupported) {
     printf("\n+--------------------------------------------+\n");
     printf("| Black: ");
     for(int i = 5; i < 10; ++i) {
-        printf("%c: %d ", pieceToChar((PieceType)(i - 5)), takenPiecesCounter[i]);
+    	if (unicodeSupported) printf("%s: %d ", getPieceUnicode((PieceType)(i - 5), BLACK), takenPiecesCounter[i]);
+        else printf("%c: %d ", pieceToChar((PieceType)(i - 5)), takenPiecesCounter[i]);
     }
 
     int bscore = takenPiecesCounter[5];
@@ -300,6 +303,7 @@ int checkForUnicodeShellsWindows() {
                     if (_stricmp(entry.szExeFile, "powershell.exe") == 0 ||
                         _stricmp(entry.szExeFile, "pwsh.exe") == 0 ||
                         _stricmp(entry.szExeFile, "wt.exe") == 0 ||
+                        _stricmp(entry.szExeFile, "cmd.exe") == 0 ||
                         _stricmp(entry.szExeFile, "putty.exe") == 0 ||
                         _stricmp(entry.szExeFile, "git-bash.exe") == 0 ||
                         _stricmp(entry.szExeFile, "ConEmu.exe") == 0 ||
@@ -362,14 +366,12 @@ int checkChessRules(Board* board, Piece* piece, int bx, int by, int ax, int ay, 
         case PAWN: {
             if (piece->color == WHITE) {
                 if (by == ay && bx == ax - 1 &&
-                    board->squares[ax][ay] == NULL) {
-                    return 1; // normal move
-                }
+                    board->squares[ax][ay] == NULL)
+                    return 1; // normal forward white pawn move
                 else if (bx == 1 && bx == ax - 2 &&
                     board->squares[ax - 1][ay] == NULL &&
-                    board->squares[ax][ay] == NULL) {
-                    return 1; // first move
-                }
+                    board->squares[ax][ay] == NULL)
+                    return 1; // two-square forward white pawn move
                 else if (bx == ax - 1 && (by == ay - 1 || by == ay + 1) &&
                     board->squares[ax][ay] != NULL &&
                     board->squares[ax][ay]->color == BLACK) {
@@ -394,14 +396,12 @@ int checkChessRules(Board* board, Piece* piece, int bx, int by, int ax, int ay, 
             }
             else if (piece->color == BLACK) {
                 if (by == ay && bx == ax + 1 && 
-                    board->squares[ax][ay] == NULL) {
+                    board->squares[ax][ay] == NULL)
                     return 1; // Normal move
-                }
                 else if (bx == 6 && bx == ax + 2 && 
                     board->squares[ax + 1][ay] == NULL && 
-                    board->squares[ax][ay] == NULL) {
+                    board->squares[ax][ay] == NULL)
                     return 1; // First move of the game
-                }
                 else if (bx == ax + 1 && (by == ay - 1 || by == ay + 1) && 
                     board->squares[ax][ay] != NULL && 
                     board->squares[ax][ay]->color == WHITE) {
@@ -513,11 +513,10 @@ int checkChessRules(Board* board, Piece* piece, int bx, int by, int ax, int ay, 
         case KING: { 
             int dx = abs(ax - bx);
             int dy = abs(ay - by);
-            if ((dx == 0 && dy == 1) || (dx == 1 && dy == 0) || (dx == 1 && dy == 1)) {
+            if ((dx == 0 && dy == 1) || (dx == 1 && dy == 0) || (dx == 1 && dy == 1))
                 if (board->squares[ax][ay] == NULL || 
                     board->squares[ax][ay]->color != piece->color)
-                    return 1;
-            }
+                    return 1; // normal king move
             else if (dx == 0 && dy == 2) {
                 if (piece->hasMoved) return 0; //king has already moved too bad!
                 int rookx = ax;
