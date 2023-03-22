@@ -1,4 +1,5 @@
 #include "Chess.h"
+#include <locale.h>
 
 Board* createBoard() {
     Board* board = (Board*)malloc(sizeof(Board));
@@ -84,7 +85,6 @@ char colorToChar(Color c) {
     }
 }
 
-
 char* pieceToName(PieceType p) {
     switch(p) {
         case PAWN: return "Pawn";
@@ -97,7 +97,6 @@ char* pieceToName(PieceType p) {
     }
 }
 
-
 char* colorToName(Color c) {
     switch(c) {
         case WHITE: return "White";
@@ -106,18 +105,47 @@ char* colorToName(Color c) {
     }
 }
 
+char* getPieceUnicode(PieceType t, Color c) {
+    switch(t) {
+        case KING: default: return c == WHITE ? "\u265A" : "\u2654";
+        case QUEEN: return c == WHITE ? "\u265B" : "\u2655";
+        case ROOK: return c == WHITE ? "\u265C" : "\u2656";
+        case BISHOP: return c == WHITE ? "\u265D" : "\u2657";
+        case KNIGHT: return c == WHITE ? "\u265E" : "\u2658";
+        case PAWN: return c == WHITE ? "\u265F" : "\u2659";
+    }
+}
+
 
 void printBoard(Board* board) {
+    char* term = getenv("TERM");
+    int unicode_supported = 0;
+    if (term != NULL) {
+        setlocale(LC_CTYPE, "");
+        if (strstr(term, "xterm") != NULL || strstr(term, "rxvt") != NULL || strstr(term, "linux") != NULL) {
+            unicode_supported = 1;
+        }
+    }
+
+    printf("\n+----+----+----+----+----+----+----+----+----+");
+    printf("\n|    | a  | b  | c  | d  | e  | f  | g  | h  |");
     printf("\n+----+----+----+----+----+----+----+----+----+\n");
-    printf("|    | a  | b  | c  | d  | e  | f  | g  | h  |\n");
-    printf("+----+----+----+----+----+----+----+----+----+\n");
     for (int i = CHESS_DIM - 1; i >= 0; --i) {
         printf("| %d  ", (i + 1));
         for (int j = 0; j < CHESS_DIM; ++j) {
             if (j == 0) printf("| ");
-            if (board->squares[i][j] != NULL)
-               printf("%c%c | ", colorToChar(board->squares[i][j]->color),
-                                 pieceToChar(board->squares[i][j]->type));
+            if (board->squares[i][j] != NULL) {
+               // new unicode special chars
+                if (unicode_supported) {
+                    // causes tofu boxes if the terminal does support unicode, but doesnt have the char in the font
+                    printf(" %s | ", getPieceUnicode(board->squares[i][j]->type, 
+                                                         board->squares[i][j]->color));
+                } else {
+                    // Terminal does not support Unicode
+                    printf("%c%c | ", colorToChar(board->squares[i][j]->color),
+                                      pieceToChar(board->squares[i][j]->type));
+                }
+            }
             else if ((i + j) % 2 == 0)
                 printf("-- | ");
             else
@@ -343,8 +371,11 @@ int checkChessRules(Board* board, Piece* piece, int bx, int by, int ax, int ay, 
                     x += xdir;
                     y += ydir;
                 }
-                if (board->squares[ax][ay] != NULL)
+                if (board->squares[ax][ay] != NULL) {
+                    if (board->squares[bx][by]->color == board->squares[ax][ay]->color)
+                        return 0; // don't take own color
                     if (inc_mode == 1) incrementCaptureCounter(board->squares[ax][ay]->type, board->squares[ax][ay]->color);
+                }
                 return 1; // nothing is blocking the rook
             }
             break;
@@ -379,9 +410,11 @@ int checkChessRules(Board* board, Piece* piece, int bx, int by, int ax, int ay, 
                     x += xdir;
                     y += ydir;
                 }
-                if (board->squares[ax][ay] != NULL)
+                if (board->squares[ax][ay] != NULL) {
+                    if (board->squares[bx][by]->color == board->squares[ax][ay]->color)
+                        return 0; // don't take own color
                     if (inc_mode == 1) incrementCaptureCounter(board->squares[ax][ay]->type, board->squares[ax][ay]->color);
-
+                }
                 return 1; // No pieces are blocking
             }
 
@@ -398,12 +431,14 @@ int checkChessRules(Board* board, Piece* piece, int bx, int by, int ax, int ay, 
                 while (x != bx || y != by) {
                     if (board->squares[x][y] != NULL)
                         return 0;
-
                     x += xdir;
                     y += ydir;
                 }
-                if (board->squares[ax][ay] != NULL)
+                if (board->squares[ax][ay] != NULL) {
+                    if (board->squares[bx][by]->color == board->squares[ax][ay]->color)
+                        return 0; // don't take own color
                     if (inc_mode == 1) incrementCaptureCounter(board->squares[ax][ay]->type, board->squares[ax][ay]->color);
+                }
                 return 1; // no pieces are blocking
             }
             break; 
@@ -482,11 +517,8 @@ int isKingInCheck(Board* board, Color color) {
 }
 
 
-int isCheckmate(Board* board, Color color) {
-    if (!isKingInCheck(board, color)) {
-        return 0; // The king is not in check, so it cannot be checkmate
-    }
-
+int isCheckmateOrStalemate(Board* board, Color color) {
+    int kingInCheck = isKingInCheck(board, color);
     for (int x1 = 0; x1 < CHESS_DIM; ++x1) {
         for (int y1 = 0; y1 < CHESS_DIM; ++y1) {
             Piece* piece = board->squares[x1][y1];
@@ -494,26 +526,36 @@ int isCheckmate(Board* board, Color color) {
                 for (int x2 = 0; x2 < CHESS_DIM; ++x2) {
                     for (int y2 = 0; y2 < CHESS_DIM; ++y2) {
                         if (checkChessRules(board, piece, x1, y1, x2, y2, 0)) {
-                            Piece* captured = board->squares[x2][y2];
+                            // Simulate the move by moving the piece to the target position
+                            Piece* capturedPiece = board->squares[x2][y2];
                             board->squares[x2][y2] = piece;
                             board->squares[x1][y1] = NULL;
 
-                            if (!isKingInCheck(board, color)) {
-                                board->squares[x1][y1] = piece;
-                                board->squares[x2][y2] = captured;
+                            // Check if the king is still in check after the move
+                            int kingStillInCheck = isKingInCheck(board, color);
+
+                            // Undo the simulated move
+                            board->squares[x1][y1] = piece;
+                            board->squares[x2][y2] = capturedPiece;
+
+                            // If the king is not in check after the move, then it's not a checkmate
+                            if (!kingStillInCheck) {
+                                char bef[3], aft[3];
+                                arrayToNotation(x1, y1, bef);
+                                arrayToNotation(x2, y2, aft);
+                                if (kingInCheck)
+                                    printf("One valid move that gets you out of check: %c%c at %s to %s\n",
+                                           colorToChar(piece->color), pieceToChar(piece->type), bef, aft);
                                 return 0;
                             }
-
-                            board->squares[x1][y1] = piece;
-                            board->squares[x2][y2] = captured;
                         }
                     }
                 }
             }
         }
     }
-    return 1;
-}
+    return kingInCheck ? 2 : 1;
+}   
 
 
 void movePiece(Board* board, int bx, int by, int ax, int ay) {
@@ -561,13 +603,17 @@ int validateAndRunMove(Board* board, char* before, char* after, int* movesPlayed
         board->lastMove->by = by;
         board->lastMove->ax = ax;
         board->lastMove->ay = ay;
-        if (isKingInCheck(board, *movesPlayed % 2 == 0)) {
-            if (isCheckmate(board, *movesPlayed % 2 == 0)) {
-                printf("CHECKMATE!!!!\n");
-                gameOver = 1;
-            } else {
-                printf("Check!\n");
-            }
+        int checkformate = isCheckmateOrStalemate(board, *movesPlayed % 2 == 0);
+        if (checkformate == 2) {
+            printf("CHECKMATE!!!!\n");
+            gameOver = 1;
+        }
+        else if (checkformate == 1) {
+            printf("STALEMATE!!!\n");
+            gameOver = 1;
+        }
+        else if (isKingInCheck(board, *movesPlayed % 2 == 0)) {
+            printf("Check!\n");
         }
     }
     return status;

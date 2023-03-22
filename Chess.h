@@ -50,7 +50,7 @@ int collectInput(char* input);
 void incrementCaptureCounter(PieceType p, Color c);
 int isSquareAttacked(Board* board, Color color, int x, int y);
 int isKingInCheck(Board* board, Color color);
-int isCheckmate(Board* board, Color color);
+int isCheckmateOrStalemate(Board* board, Color color);
 void movePiece(Board* board, int bx, int by, int ax, int ay);
 int validateAndRunMove(Board* board, char* before, char* after, int* movesPlayed);
 int validateInput(char* input, Board* board);
