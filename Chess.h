@@ -4,7 +4,8 @@
 
 #define CHESS_DIM 8
 #define NUM_PIECES 32
-#define MAX_INPUT_LENGTH 6
+#define MAX_INPUT_LENGTH 140
+#define MAX_FILENAME_LENGTH 128
 #define MAX_MOVE_CHARS 2048
 
 int takenPiecesCounter[10] = {0};
@@ -24,12 +25,12 @@ typedef struct {
     Piece* piece;
     int bx, by;
     int ax, ay; 
-} LastMove;
+} Move;
 
 typedef struct {
     Piece* squares[CHESS_DIM][CHESS_DIM];
     int turnCounter;
-    LastMove* lastMove;
+    Move* lastMove;
 } Board;
 
 Board* createBoard();
@@ -49,7 +50,7 @@ void loadBoard(Board* board, const char* filename);
 void notationToArray(char* notation, int* r, int* c);
 void arrayToNotation(int r, int c, char* notation);
 void appendMoveToHistory(char* history, const char* move);
-int collectInput(char* input);
+int collectInput(char* input, char* filename);
 void incrementCaptureCounter(PieceType p, Color c);
 int checkChessRules(Board* board, Piece* piece, int bx, int by, int ax, int ay, int inc_mode);
 int isSquareAttacked(Board* board, Color color, int x, int y);
