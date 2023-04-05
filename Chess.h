@@ -8,6 +8,7 @@
 #define MAX_FILENAME_LENGTH 128
 #define MAX_MOVE_CHARS 2048
 
+int hasCastled[2] = {0, 0};
 int takenPiecesCounter[10] = {0};
 int gameOver = 0;
 
@@ -55,6 +56,7 @@ void incrementCaptureCounter(PieceType p, Color c);
 int checkChessRules(Board* board, Piece* piece, int bx, int by, int ax, int ay, int inc_mode);
 int isSquareAttacked(Board* board, Color color, int x, int y);
 int isKingInCheck(Board* board, Color color);
+Piece* clonePiece(Piece* original);
 int isCheckmateOrStalemate(Board* board, Color color);
 void movePiece(Board* board, int bx, int by, int ax, int ay);
 int validateAndRunMove(Board* board, char* before, char* after, int* movesPlayed);
