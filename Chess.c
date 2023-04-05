@@ -521,7 +521,7 @@ int checkChessRules(Board* board, Piece* piece, int bx, int by, int ax, int ay, 
                     return 1; // normal king move
             }
             else if (dx == 0 && dy == 2) {
-                if (piece->hasMoved) return 0; //king has already moved too bad!
+                if (piece->hasMoved || hasCastled[piece->color] == 1) return 0; //king has already moved too bad!
                 int rookx = ax;
                 int rooky = ay > by ? 7 : 0;
                 int ydir = by < ay ? 1 : -1;
@@ -545,6 +545,8 @@ int checkChessRules(Board* board, Piece* piece, int bx, int by, int ax, int ay, 
                     board->squares[rookx][rooky] = NULL;
                     initializePieceAtSquare(board, ROOK, piece->color, rookx, rooky - 2);
                 }
+
+                hasCastled[piece->color] = 1;
                 return 1; 
             }
             break; 
@@ -583,8 +585,20 @@ int isKingInCheck(Board* board, Color color) {
     return isSquareAttacked(board, color, kingX, kingY);
 }
 
+Piece* clonePiece(Piece* original) {
+	if (original == NULL) return NULL;
+	Piece* copy = (Piece*)malloc(sizeof(Piece));
+	copy->type = original->type;
+	copy->color = original->color;
+	copy->x = original->x;
+	copy->y = original->y;
+	copy->hasMoved = original->hasMoved;
+	return copy;
+}
+
 int isCheckmateOrStalemate(Board* board, Color color) {
     int kingInCheck = isKingInCheck(board, color);
+
     for (int x1 = 0; x1 < CHESS_DIM; ++x1) {
         for (int y1 = 0; y1 < CHESS_DIM; ++y1) {
             Piece* piece = board->squares[x1][y1];
@@ -592,28 +606,25 @@ int isCheckmateOrStalemate(Board* board, Color color) {
                 for (int x2 = 0; x2 < CHESS_DIM; ++x2) {
                     for (int y2 = 0; y2 < CHESS_DIM; ++y2) {
                         if (checkChessRules(board, piece, x1, y1, x2, y2, 0)) {
-                            // Simulate the move by moving the piece to the target position
-                            Piece* capturedPiece = board->squares[x2][y2];
-                            board->squares[x2][y2] = piece;
-                            board->squares[x1][y1] = NULL;
-
-                            // Check if the king is still in check after the move
-                            int kingStillInCheck = isKingInCheck(board, color);
-
-                            // Undo the simulated move
-                            board->squares[x1][y1] = piece;
-                            board->squares[x2][y2] = capturedPiece;
-
-                            // If the king is not in check after the move, then it's not a checkmate
-                            if (!kingStillInCheck) {
+							Piece* defendingPiece = clonePiece(board->squares[x2][y2]);
+							int foundEscape = 0;
+							movePiece(board, x1, y1, x2, y2); // run the move, will roll back later
+							if (!isKingInCheck(board, color)) {
+								foundEscape = 1;
                                 char bef[3], aft[3];
                                 arrayToNotation(x1, y1, bef);
                                 arrayToNotation(x2, y2, aft);
                                 if (kingInCheck)
                                     printf("One valid move hint that gets you out of check: %c%c at %s to %s\n",
-                                           colorToChar(piece->color), pieceToChar(piece->type), bef, aft);
-                                return 0;
-                            }
+                                           colorToChar(piece->color), pieceToChar(piece->type), bef, aft);							
+								printBoard(board, 1);
+							}
+							movePiece(board, x2, y2, x1, y1); // reverse the move, restore the defending piece if not null
+							if (defendingPiece != NULL)
+								initializePieceAtSquare(board, defendingPiece->type, defendingPiece->color, x2, y2);
+                        	free(defendingPiece);
+                        	if (foundEscape)
+                        		return 0;
                         }
                     }
                 }
@@ -621,7 +632,7 @@ int isCheckmateOrStalemate(Board* board, Color color) {
         }
     }
     return kingInCheck ? 2 : 1;
-}   
+}
 
 void movePiece(Board* board, int bx, int by, int ax, int ay) {
     if (board->squares[ax][ay] == NULL)
@@ -637,8 +648,7 @@ void movePiece(Board* board, int bx, int by, int ax, int ay) {
 
 int checkForDiscoveredCheck(Board* board, int bx, int by, int ax, int ay, int* movesPlayed) {
 	int foundDiscovery = 0;
-	Piece* attackingPiece = board->squares[bx][by];
-	Piece* defendingPiece = board->squares[ax][ay];
+	Piece* defendingPiece = clonePiece(board->squares[ax][ay]);
 	movePiece(board, bx, by, ax, ay); // run the move, will roll back later
 	if (isKingInCheck(board, *movesPlayed % 2 == 1)) {
 		printf("Discovered check on self!\n");
@@ -648,6 +658,7 @@ int checkForDiscoveredCheck(Board* board, int bx, int by, int ax, int ay, int* m
 	movePiece(board, ax, ay, bx, by); // reverse the move, restore the defending piece if not null
 	if (defendingPiece != NULL)
 		initializePieceAtSquare(board, defendingPiece->type, defendingPiece->color, ax, ay);
+	free(defendingPiece);
 	return foundDiscovery;
 }
 
@@ -686,6 +697,7 @@ int validateAndRunMove(Board* board, char* before, char* after, int* movesPlayed
         board->lastMove->by = by;
         board->lastMove->ax = ax;
         board->lastMove->ay = ay;
+        
         int checkformate = isCheckmateOrStalemate(board, *movesPlayed % 2 == 0);
         if (checkformate == 2) {
             printf("CHECKMATE!!!!\n");
@@ -791,7 +803,6 @@ void chessMain() {
 
     while (loop == 1) {
         int collectCode = collectInput(input, filename);
-        if (collectCode == 0) printf("Had trouble parsing input. try again\n");
         if (collectCode == -1 || collectCode == 1) loop = 0;
         if (collectCode == 2) {
            saveBoard(board, filename);
@@ -824,6 +835,8 @@ void chessMain() {
             setupBoardStandard(board);
             printf("Board was reset.\n");
             board->turnCounter = 0;
+            hasCastled[0] = 0;
+            hasCastled[1] = 0;
             for (int i = 0; i < 10; ++i)
                 takenPiecesCounter[i] = 0;
             printBoard(board, unicodeSupported);
