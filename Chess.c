@@ -1,5 +1,7 @@
-#include "Chess.h"
 #include <locale.h>
+
+#include "Chess.h"
+
 #ifdef _WIN32
 	#define OS_NAME "Windows"
 	#include <windows.h>
