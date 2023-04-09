@@ -72,7 +72,7 @@ void initializePieceAtSquare(Board* board, PieceType type, Color color, int i, i
     board->squares[i][j]->hasMoved = 0;
 }
 
-const char pieceToChar(PieceType p) {
+char pieceToChar(PieceType p) {
     switch(p) {
         case PAWN: return 'p';
         case KNIGHT: return 'N';
@@ -84,7 +84,7 @@ const char pieceToChar(PieceType p) {
     }
 }
 
-const char colorToChar(Color c) {
+char colorToChar(Color c) {
     switch(c) {
         case WHITE: return 'W';
         case BLACK: return 'B';
@@ -669,6 +669,13 @@ int validateAndRunMove(Board* board, char* before, char* after, int* movesPlayed
     notationToArray(before, &bx, &by);
     notationToArray(after, &ax, &ay);
 
+    if (before[0] < 'a' || before[0] > 'h' ||
+    	before[1] < '1' || before[1] > '8' ||
+    	after[0] < 'a' || after[0] > 'h' ||
+    	after[1] < '1' || after[1] > '8') {
+    	printf("Error, Move is out of bounds of the board.\n");
+    	return 0;
+	}
     if (board->squares[bx][by] == NULL) {
         printf("starting square is empty. Invalid move\n");
         return 0;
@@ -725,7 +732,10 @@ int validateInput(char* input, Board* board) {
         afterMove = strtok(NULL, "=");
         if (afterMove != NULL)
             return validateAndRunMove(board, beforeMove, afterMove, &board->turnCounter);
+        else
+    		printf("Error: Move is missing = token.\n");
     }
+
     return -1;
 }
 
@@ -772,10 +782,10 @@ void readMovesFromFile(Board* board, const char* filename, int* movesPlayed, cha
 void printSizes() {
 	printf("Size of input buffer: %d\n", MAX_INPUT_LENGTH);
     printf("Size of filename buffer: %d\n", MAX_FILENAME_LENGTH);
-    printf("Size of chess board: %d\n", sizeof(Board));
+    printf("Size of chess board: %lld\n", sizeof(Board));
     printf("Size of game history: %d\n", MAX_MOVE_CHARS);
-    printf("Size of piece: %d\n", sizeof(Piece));
-    printf("Total (32 pieces): %d\n", MAX_INPUT_LENGTH + MAX_FILENAME_LENGTH + sizeof(Board) +
+    printf("Size of piece: %lld\n", sizeof(Piece));
+    printf("Total (32 pieces): %lld\n", MAX_INPUT_LENGTH + MAX_FILENAME_LENGTH + sizeof(Board) +
     	                  MAX_MOVE_CHARS + (32 * sizeof(Piece)));
 }
 
@@ -821,16 +831,15 @@ void chessMain() {
         }
 
         if (collectCode == 4) {
-            printf("Game History (length: %ld):\n%s", strlen(gameHistory), gameHistory);
+            printf("Game History (length: %lld):\n%s", strlen(gameHistory), gameHistory);
             FILE* file = fopen(filename, "w");
             fputs(gameHistory, file);
             fclose(file);
         }
 
         if (collectCode == 5)
-             readMovesFromFile(board, filename, 
-             				   &board->turnCounter, gameHistory, unicodeSupported);
-
+            readMovesFromFile(board, filename, 
+             				  &board->turnCounter, gameHistory, unicodeSupported);
         if (collectCode == 6) {
             destroyBoard(board);
             board = createBoard();
@@ -847,22 +856,24 @@ void chessMain() {
         if (collectCode == 7) printSizes();
         if (collectCode == 8) printHelp();
 
-        char input_cpy[6] = "";
-        strcpy(input_cpy, input);
-        validationResult = validateInput(input, board); // destructive of input
-        if (validationResult == -1)
-            continue;
-        else if (validationResult == 1) {
-            if (board->turnCounter < 300)
-                appendMoveToHistory(gameHistory, input_cpy);
-            printBoard(board, unicodeSupported);
-            ++board->turnCounter;
+        if (collectCode == 0) {
+	        char input_cpy[6] = "";
+	        strcpy(input_cpy, input);
+	        validationResult = validateInput(input, board); // destructive of input
+	        if (validationResult == -1)
+	            continue;
+	        else if (validationResult == 1) {
+	            if (board->turnCounter < 300)
+	                appendMoveToHistory(gameHistory, input_cpy);
+	            printBoard(board, unicodeSupported);
+	            ++board->turnCounter;
 
-            if (gameOver == 1) {
-                printf("Game over: %s wins!\n", colorToName(board->turnCounter % 2 == 0));
-                break;
-            }
-        }
+	            if (gameOver == 1) {
+	                printf("Game over: %s wins!\n", colorToName(board->turnCounter % 2 == 0));
+	                break;
+	            }
+	        }
+    	}
     }
     printf("Exiting...\n");
     destroyBoard(board);
