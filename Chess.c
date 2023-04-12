@@ -303,6 +303,19 @@ void loadBoard(Board* board, const char* filename) {
     return;
 }
 
+void resetBoard(Board* board, int unicodeSupported) {
+    destroyBoard(board);
+    board = createBoard();
+    setupBoardStandard(board);
+    printf("Board was reset.\n");
+    board->turnCounter = 0;
+    hasCastled[0] = 0;
+    hasCastled[1] = 0;
+    for (int i = 0; i < 10; ++i)
+        takenPiecesCounter[i] = 0;
+    printBoard(board, unicodeSupported);
+}
+
 void notationToArray(char* notation, int* r, int* c) {
     *c = notation[0] - 'a';
     *r = notation[1] - '1';
@@ -320,6 +333,7 @@ void appendMoveToHistory(char* history, const char* move) {
 }
 
 int collectInput(char* input, char* filename) {
+	printf("Chess$ ");
     if (fgets(input, MAX_INPUT_LENGTH, stdin) == NULL) {
         printf("chess app status: fgets failed\n");
         return -1;
@@ -343,6 +357,11 @@ int collectInput(char* input, char* filename) {
     if (strncmp(input, "reset", 5) == 0) return 6;
     if (strncmp(input, "sizes", 5) == 0) return 7;
     if (strncmp(input, "help", 4) == 0) return 8;
+    if (strncmp(input, "yes", 3) == 0) return 9;
+    if (strncmp(input, "no", 2) == 0) return 10;
+    if (strncmp(input, "q", 1) == 0 || strncmp(input, "n", 1) == 0 ||
+    	strncmp(input, "r", 1) == 0 || strncmp(input, "b", 1) == 0)
+    	return 11;
     if (strncmp(input, "exit", 4) == 0) return 1;
 
     return 0;
@@ -473,13 +492,16 @@ int checkChessRules(Board* board, Piece* piece, int bx, int by, int ax, int ay, 
                 int ydir = (by - ay) > 0 ? 1 : (by - ay) < 0 ? -1 : 0;
                 int x = ax + xdir;
                 int y = ay + ydir;
-
                 while (x != bx || y != by) {
-                    if (board->squares[x][y] != NULL)
-                        return 0; // A piece is blocking the way
+                	if (x >= 0 && x < CHESS_DIM && y >= 0 && y < CHESS_DIM) {
+	                    if (board->squares[x][y] != NULL)
+	                        return 0; // A piece is blocking the way
 
-                    x += xdir;
-                    y += ydir;
+	                    x += xdir;
+	                    y += ydir;
+	                }
+	                else
+	                	break;
                 }
                 if (board->squares[ax][ay] != NULL) {
                     if (board->squares[bx][by]->color == board->squares[ax][ay]->color)
@@ -664,6 +686,19 @@ int checkForDiscoveredCheck(Board* board, int bx, int by, int ax, int ay, int* m
 	return foundDiscovery;
 }
 
+void promotePawn(Board* board, char* input) {
+	int x = board->lastMove->ax;
+	int y = board->lastMove->ay;
+	if (strncmp(input, "q", 1) == 0)
+		board->squares[x][y]->type = QUEEN;
+	else if (strncmp(input, "n", 1) == 0)
+		board->squares[x][y]->type = KNIGHT;
+	else if (strncmp(input, "r", 1) == 0)
+		board->squares[x][y]->type = ROOK;
+	else if (strncmp(input, "b", 1) == 0)
+		board->squares[x][y]->type = BISHOP;
+}
+
 int validateAndRunMove(Board* board, char* before, char* after, int* movesPlayed) {
     int bx = 0, by = 0, ax = 0, ay = 0;
     notationToArray(before, &bx, &by);
@@ -718,6 +753,24 @@ int validateAndRunMove(Board* board, char* before, char* after, int* movesPlayed
         }
         else if (isKingInCheck(board, *movesPlayed % 2 == 0)) {
             printf("Check!\n");
+        }
+
+        if (board->lastMove->piece->type == PAWN && 
+          ((board->lastMove->ax == 7 && board->lastMove->piece->color == WHITE) ||
+           (board->lastMove->ax == 0 && board->lastMove->piece->color == BLACK))) {
+        	printf("Pawn promotion!\n");
+        	printf("What piece would you like to promote your pawn to?\n");
+            printf("(q for queen, n for knight, r for rook, b for bishop):\n");
+        	char input[MAX_INPUT_LENGTH];
+            char filename[MAX_FILENAME_LENGTH];
+        	int collectCode = collectInput(input, filename);
+        	while (collectCode != 11) {
+        		printf("Did not understand input, try again.\n");
+                printf("(q for queen, n for knight, r for rook, b for bishop):\n");
+        		collectCode = collectInput(input, filename);
+        	}
+        	
+        	promotePawn(board, input);
         }
     }
     return status;
@@ -782,11 +835,18 @@ void readMovesFromFile(Board* board, const char* filename, int* movesPlayed, cha
 void printSizes() {
 	printf("Size of input buffer: %d\n", MAX_INPUT_LENGTH);
     printf("Size of filename buffer: %d\n", MAX_FILENAME_LENGTH);
-    printf("Size of chess board: %lld\n", sizeof(Board));
     printf("Size of game history: %d\n", MAX_MOVE_CHARS);
+   #ifdef _WIN32
+    printf("Size of chess board: %lld\n", sizeof(Board));
     printf("Size of piece: %lld\n", sizeof(Piece));
     printf("Total (32 pieces): %lld\n", MAX_INPUT_LENGTH + MAX_FILENAME_LENGTH + sizeof(Board) +
-    	                  MAX_MOVE_CHARS + (32 * sizeof(Piece)));
+                          MAX_MOVE_CHARS + (32 * sizeof(Piece)));
+   #else
+    printf("Size of chess board: %ld\n", sizeof(Board));
+    printf("Size of piece: %ld\n", sizeof(Piece));
+    printf("Total (32 pieces): %ld\n", MAX_INPUT_LENGTH + MAX_FILENAME_LENGTH + sizeof(Board) +
+                          MAX_MOVE_CHARS + (32 * sizeof(Piece)));
+   #endif
 }
 
 void printHelp() {
@@ -831,7 +891,11 @@ void chessMain() {
         }
 
         if (collectCode == 4) {
+           #if _WIN32
             printf("Game History (length: %lld):\n%s", strlen(gameHistory), gameHistory);
+           #else
+            printf("Game History (length: %ld):\n%s", strlen(gameHistory), gameHistory);
+           #endif 
             FILE* file = fopen(filename, "w");
             fputs(gameHistory, file);
             fclose(file);
@@ -841,16 +905,7 @@ void chessMain() {
             readMovesFromFile(board, filename, 
              				  &board->turnCounter, gameHistory, unicodeSupported);
         if (collectCode == 6) {
-            destroyBoard(board);
-            board = createBoard();
-            setupBoardStandard(board);
-            printf("Board was reset.\n");
-            board->turnCounter = 0;
-            hasCastled[0] = 0;
-            hasCastled[1] = 0;
-            for (int i = 0; i < 10; ++i)
-                takenPiecesCounter[i] = 0;
-            printBoard(board, unicodeSupported);
+        	resetBoard(board, unicodeSupported);
         }
 
         if (collectCode == 7) printSizes();
@@ -870,7 +925,17 @@ void chessMain() {
 
 	            if (gameOver == 1) {
 	                printf("Game over: %s wins!\n", colorToName(board->turnCounter % 2 == 0));
-	                break;
+	                printf("Would you like to keep playing?\n");
+	                do {
+	                	collectCode = collectInput(input, filename);
+	            	} while (collectCode != 10 && collectCode != 9 && 
+	            		     collectCode != 1  && collectCode != -1);
+	            	if (collectCode == 9) {
+	            		resetBoard(board, unicodeSupported);
+	            		continue;
+	            	}
+	            	else
+	                	break;
 	            }
 	        }
     	}

@@ -48,6 +48,7 @@ int checkForUnicodeShellsWindows();
 void printBoard(Board* board, int unicodeSupported);
 void saveBoard(Board* board, const char* filename);
 void loadBoard(Board* board, const char* filename);
+void resetBoard(Board* board, int unicodeSupported);
 void notationToArray(char* notation, int* r, int* c);
 void arrayToNotation(int r, int c, char* notation);
 void appendMoveToHistory(char* history, const char* move);
