@@ -13,6 +13,10 @@
 	#define OS_NAME "Unknown"
 #endif
 
+static int hasCastled[2] = {0, 0};
+static int takenPiecesCounter[10] = {0};
+static int gameOver = 0;
+
 int doesTerminalSupportUnicode() {
     char* term = getenv("TERM");
     int unicodeSupported = 0;

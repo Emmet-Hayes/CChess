@@ -1,4 +1,5 @@
 *.exe
 *.app
 *.bin
+*.o
 Chess

@@ -10,10 +10,6 @@
 #define MAX_FILENAME_LENGTH 128
 #define MAX_MOVE_CHARS 2048
 
-static int hasCastled[2] = {0, 0};
-static int takenPiecesCounter[10] = {0};
-static int gameOver = 0;
-
 int doesTerminalSupportUnicode();
 int checkForUnicodeShellsWindows();
 void appendMoveToHistory(char* history, const char* move);

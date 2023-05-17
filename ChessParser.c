@@ -49,7 +49,7 @@ char* convertToLongAlgebraicNotation(Board* board, char* input) {
             }
 
             if (start_row != -1) {
-                snprintf(longNotation, 6, "%c%d=%c%d", input[0], start_row + 1, input[0], dest_row + 1);
+                snprintf(longNotation, 7, "%c%d=%c%d", input[0], start_row + 1, input[0], dest_row + 1);
             	return longNotation;
             } else {
                 free(longNotation);
@@ -172,6 +172,7 @@ char* convertToLongAlgebraicNotation(Board* board, char* input) {
 	        }
 	    }
 	}
+	return NULL;
 }
 
 void notationToArray(char* notation, int* r, int* c) {
